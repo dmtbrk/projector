@@ -4,18 +4,14 @@ import (
 	"context"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
-type CommentRepo interface {
-	AllByTask(context.Context, models.Task) ([]models.Comment, error)
-	Create(context.Context, models.Task, models.Comment) (models.Comment, error)
-}
-
 type CommentService struct {
-	cr CommentRepo
+	cr repos.CommentRepo
 }
 
-func NewCommentService(cr CommentRepo) CommentService {
+func NewCommentService(cr repos.CommentRepo) CommentService {
 	return CommentService{cr: cr}
 }
 

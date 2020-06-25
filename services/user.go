@@ -5,21 +5,17 @@ import (
 	"errors"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
 var ErrUserExist = errors.New("projector: user already exists")
 
-type UserRepo interface {
-	All(context.Context) ([]models.User, error)
-	Create(context.Context, models.User) (models.User, error)
-}
-
 type UserService struct {
-	ur UserRepo
+	ur repos.UserRepo
 }
 
-func NewUserService(repo UserRepo) UserService {
-	return UserService{ur: repo}
+func NewUserService(ur repos.UserRepo) UserService {
+	return UserService{ur: ur}
 }
 
 func (srv UserService) CreateUser(name string) (user models.User, err error) {

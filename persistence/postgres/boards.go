@@ -8,12 +8,14 @@ import (
 	"log"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
 const defaultBoardsTable = "boards"
 
 type BoardRepo struct {
 	db    *sql.DB
+	tx    *sql.Tx
 	table string
 }
 
@@ -22,6 +24,25 @@ func NewBoardRepo(db *sql.DB, table string) BoardRepo {
 		table = defaultBoardsTable
 	}
 	return BoardRepo{db: db, table: table}
+}
+
+func (repo BoardRepo) WithTx(ctx context.Context, tx repos.Tx, f func(repos.BoardRepo) error) (repos.Tx, error) {
+	var sqlTx *sql.Tx
+	var br repos.BoardRepo
+	if tx == nil {
+		sqlTx, err := repo.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		tx = sqlTx
+	}
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return nil, errors.New("WithTx: wrong concrete tx type, expecting *sql.Tx")
+	}
+	br = BoardRepo{tx: sqlTx, table: repo.table}
+	err := f(br)
+	return tx, err
 }
 
 func (repo BoardRepo) AllByUser(ctx context.Context, user models.User) (boards []models.Board, err error) {
@@ -79,7 +100,13 @@ func (repo BoardRepo) AllByUser(ctx context.Context, user models.User) (boards [
 func (repo BoardRepo) Create(ctx context.Context, u models.User, b models.Board) (models.Board, error) {
 	var id int
 	query := fmt.Sprintf("INSERT INTO %s (name, description, user_id) VALUES ($1, $2, $3) RETURNING id", repo.table)
-	err := repo.db.QueryRowContext(ctx, query, b.Name, b.Description, u.ID).Scan(&id)
+	var row *sql.Row
+	if repo.tx != nil {
+		row = repo.tx.QueryRowContext(ctx, query, b.Name, b.Description, u.ID)
+	} else {
+		row = repo.db.QueryRowContext(ctx, query, b.Name, b.Description, u.ID)
+	}
+	err := row.Scan(&id)
 	if err != nil {
 		err = fmt.Errorf("postgres: BoardRepo.Create: %w", err)
 		log.Println(err)

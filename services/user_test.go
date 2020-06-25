@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/ortymid/projector/mock_services"
+	"github.com/ortymid/projector/mock_repos"
 	"github.com/ortymid/projector/models"
 	"github.com/ortymid/projector/services"
 )
@@ -82,7 +82,7 @@ func TestUserService_CreateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			ur := mock_services.NewMockUserRepo(ctrl)
+			ur := mock_repos.NewMockUserRepo(ctrl)
 			if !tt.fields.ur.notExpect {
 				ur.EXPECT().Create(tt.fields.ur.expectCtx, tt.fields.ur.expectUser).Return(tt.fields.ur.returnUser, tt.fields.ur.returnErr)
 			} else {

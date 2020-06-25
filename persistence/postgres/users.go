@@ -3,16 +3,19 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
 const defaultUsersTable = "users"
 
 type UserRepo struct {
 	db    *sql.DB
+	tx    *sql.Tx
 	table string
 }
 
@@ -21,6 +24,25 @@ func NewUserRepo(db *sql.DB, table string) UserRepo {
 		table = defaultUsersTable
 	}
 	return UserRepo{db: db, table: table}
+}
+
+func (repo UserRepo) WithTx(ctx context.Context, tx repos.Tx, f func(repos.UserRepo) error) (repos.Tx, error) {
+	var sqlTx *sql.Tx
+	var ur repos.UserRepo
+	if tx == nil {
+		sqlTx, err := repo.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		tx = sqlTx
+	}
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return nil, errors.New("WithTx: wrong concrete tx type, expecting *sql.Tx")
+	}
+	ur = UserRepo{tx: sqlTx, table: repo.table}
+	err := f(ur)
+	return tx, err
 }
 
 func (repo UserRepo) All(ctx context.Context) (users []models.User, err error) {
@@ -70,7 +92,13 @@ func (repo UserRepo) All(ctx context.Context) (users []models.User, err error) {
 func (repo UserRepo) Create(ctx context.Context, user models.User) (models.User, error) {
 	var id int
 	query := fmt.Sprintf("INSERT INTO %s (name) VALUES ($1) RETURNING id", repo.table)
-	err := repo.db.QueryRowContext(ctx, query, user.Name).Scan(&id)
+	var row *sql.Row
+	if repo.tx != nil {
+		row = repo.tx.QueryRowContext(ctx, query, user.Name)
+	} else {
+		row = repo.db.QueryRowContext(ctx, query, user.Name)
+	}
+	err := row.Scan(&id)
 	if err != nil {
 		err = fmt.Errorf("postgres.UserRepo.Create: %w", err)
 		log.Println(err)

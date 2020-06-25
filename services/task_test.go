@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/ortymid/projector/mock_services"
+	"github.com/ortymid/projector/mock_repos"
 	"github.com/ortymid/projector/models"
 	"github.com/ortymid/projector/services"
 )
@@ -152,7 +152,7 @@ func TestTaskService_CreateTask(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			tr := mock_services.NewMockTaskRepo(ctrl)
+			tr := mock_repos.NewMockTaskRepo(ctrl)
 			if !tt.fields.tr.notExpect {
 				tr.EXPECT().Create(tt.fields.tr.expectCtx, tt.fields.tr.expectColumn, tt.fields.tr.expectTask).Return(tt.fields.tr.returnTask, tt.fields.tr.returnErr)
 			} else {

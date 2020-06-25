@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/ortymid/projector/mock_services"
+	"github.com/ortymid/projector/mock_repos"
 	"github.com/ortymid/projector/models"
 	"github.com/ortymid/projector/services"
 )
@@ -89,7 +89,7 @@ func TestCommentService_CreateComment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			cr := mock_services.NewMockCommentRepo(ctrl)
+			cr := mock_repos.NewMockCommentRepo(ctrl)
 			if !tt.fields.cr.notExpect {
 				cr.EXPECT().Create(tt.fields.cr.expectCtx, tt.fields.cr.expectTask, tt.fields.cr.expectComment).Return(tt.fields.cr.returnComment, tt.fields.cr.returnErr)
 			} else {

@@ -4,20 +4,14 @@ import (
 	"context"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
-type TaskRepo interface {
-	// All(context.Context) []Task
-	AllByColumn(context.Context, models.Column) ([]models.Task, error)
-	AllByBoard(context.Context, models.Board) ([]models.Task, error)
-	Create(context.Context, models.Column, models.Task) (models.Task, error)
-}
-
 type TaskService struct {
-	tr TaskRepo
+	tr repos.TaskRepo
 }
 
-func NewTaskService(tr TaskRepo) TaskService {
+func NewTaskService(tr repos.TaskRepo) TaskService {
 	return TaskService{tr: tr}
 }
 

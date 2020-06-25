@@ -4,20 +4,16 @@ import (
 	"context"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
 // const defaultColumnName = "New Column"
 
-type ColumnRepo interface {
-	AllByBoard(context.Context, models.Board) ([]models.Column, error)
-	Create(context.Context, models.Board, models.Column) (models.Column, error)
-}
-
 type ColumnService struct {
-	cr ColumnRepo
+	cr repos.ColumnRepo
 }
 
-func NewColumnService(cr ColumnRepo) ColumnService {
+func NewColumnService(cr repos.ColumnRepo) ColumnService {
 	return ColumnService{cr: cr}
 }
 

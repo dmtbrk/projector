@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/ortymid/projector/mock_services"
+	"github.com/ortymid/projector/mock_repos"
 	"github.com/ortymid/projector/models"
 	"github.com/ortymid/projector/services"
 )
@@ -55,7 +55,7 @@ func TestColumnService_CreateColumn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
-			cr := mock_services.NewMockColumnRepo(ctrl)
+			cr := mock_repos.NewMockColumnRepo(ctrl)
 			cr.EXPECT().Create(tt.fields.cr.expectCtx, tt.fields.cr.expectBoard, tt.fields.cr.expectColumn).Return(tt.fields.cr.returnColumn, tt.fields.cr.returnErr)
 
 			srv := services.NewColumnService(cr)

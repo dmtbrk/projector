@@ -8,15 +8,36 @@ import (
 	"log"
 
 	"github.com/ortymid/projector/models"
+	"github.com/ortymid/projector/persistence/repos"
 )
 
 type TaskRepo struct {
 	db    *sql.DB
+	tx    *sql.Tx
 	table string
 }
 
 func NewTaskRepo(db *sql.DB, table string) TaskRepo {
 	return TaskRepo{db: db, table: table}
+}
+
+func (repo TaskRepo) WithTx(ctx context.Context, tx repos.Tx, f func(repos.TaskRepo) error) (repos.Tx, error) {
+	var sqlTx *sql.Tx
+	var tr repos.TaskRepo
+	if tx == nil {
+		sqlTx, err := repo.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		tx = sqlTx
+	}
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return nil, errors.New("WithTx: wrong concrete tx type, expecting *sql.Tx")
+	}
+	tr = TaskRepo{tx: sqlTx, table: repo.table}
+	err := f(tr)
+	return tx, err
 }
 
 func (repo TaskRepo) AllByColumn(ctx context.Context, col models.Column) (tasks []models.Task, err error) {
@@ -78,7 +99,13 @@ func (repo TaskRepo) AllByBoard(ctx context.Context, b models.Board) ([]models.T
 func (repo TaskRepo) Create(ctx context.Context, c models.Column, t models.Task) (models.Task, error) {
 	var id int
 	query := fmt.Sprintf("INSERT INTO %s (name, description, column_id) VALUES ($1, $2, $3) RETURNING id", repo.table)
-	err := repo.db.QueryRowContext(ctx, query, t.Name, t.Description, c.ID).Scan(&id)
+	var row *sql.Row
+	if repo.tx != nil {
+		row = repo.tx.QueryRowContext(ctx, query, t.Name, t.Description, c.ID)
+	} else {
+		row = repo.db.QueryRowContext(ctx, query, t.Name, t.Description, c.ID)
+	}
+	err := row.Scan(&id)
 	if err != nil {
 		err = fmt.Errorf("postgres.TaskRepo.Create: %w", err)
 		log.Println(err)

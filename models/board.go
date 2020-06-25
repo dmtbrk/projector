@@ -7,6 +7,15 @@ type Board struct {
 	UserID      interface{} // data persistence backend defines the type
 }
 
+func NewBoard(name, desc string) (b Board, err error) {
+	b.Name = name
+	b.Description = desc
+
+	err = b.Validate()
+
+	return b, err
+}
+
 func (b Board) Validate() error {
 	return validate.Struct(b)
 }
